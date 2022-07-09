@@ -1,0 +1,15 @@
+{
+  "scripts": {
+    "meh": "echo \"$npm_config_blah is here\"",
+    "test": "jest",
+    "wrap": "node -e 'require(\"./index\").wrapAndLog(\"'$npm_config_blah'\")'"
+  },
+  "dependencies": {
+    "axios": "^0.27.2"
+  },
+  "devDependencies": {
+    "chance": "^1.1.8",
+    "jest": "^28.1.2",
+    "jest-when": "^3.5.1"
+  }
+}
