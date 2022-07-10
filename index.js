@@ -26,6 +26,15 @@ const wrapAndLog = async (dataToWrap) => {
     console.log(`token id: ${tokenId}`);
 }
 
+const unwrap = async (tokenId) => {
+
+    return axios.get(`https://api.basistheory.com/tokens/${tokenId}`, {
+        headers: {
+
+        }
+    });
+}
+
 async function makeMyFirstToken() {
 
     //Create first Token
@@ -48,7 +57,7 @@ async function makeMyFirstToken() {
         {
             headers: {
                 'Content-Type': 'application/json',
-                'BT-API-KEY': 'key_HsdCyJUUMBvLEmFaWtPfSz'
+                'BT-API-KEY': '[key here]'
             }
         });
 
@@ -57,4 +66,4 @@ async function makeMyFirstToken() {
     console.log("Read your raw value from the Token:", readToken.data.data);
 }
 
-module.exports = {wrap, wrapAndLog}
+module.exports = {wrap, wrapAndLog, unwrap}

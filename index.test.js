@@ -1,4 +1,4 @@
-const {wrap} = require('./index');
+const {wrap, unwrap} = require('./index');
 const axios = require('axios');
 const {when} = require('jest-when');
 const Chance = require('chance');
@@ -45,19 +45,7 @@ describe('index', () => {
             when(axios.post).calledWith('https://api.basistheory.com/tokens', data, config)
                 .mockImplementation(() => Promise.resolve({
                     data: {
-                        id: mockTokenId,
-                        type: 'token',
-                        tenant_id: chance.guid(),
-                        created_by: chance.guid(),
-                        created_at: chance.date(),
-                        fingerprint: chance.guid(),
-                        fingerprint_expression: '{{ data | stringify }}',
-                        privacy: {
-                            classification: 'general',
-                            impact_level: 'high',
-                            restriction_policy: 'redact'
-                        },
-                        search_indexes: []
+                        id: mockTokenId
                     }
                 }));
 
@@ -87,7 +75,40 @@ describe('index', () => {
     });
 
     describe('unwrap', () => {
+        let givenTokenId,
+            expectedUnwrappedToken,
+            actualUnwrappedToken,
+            config;
 
+        beforeEach(() => {
+            givenTokenId = chance.guid();
+            expectedUnwrappedToken = chance.word();
+
+            config = {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'BT-API-KEY': mockedBTKey
+                }
+            };
+
+            when(axios.get).calledWith(`https://api.basistheory.com/tokens/${givenTokenId}`, config)
+                .mockImplementation(() => Promise.resolve({
+                    data: {
+                        data: expectedUnwrappedToken
+                    }
+                }));
+
+            actualUnwrappedToken = unwrap(givenTokenId);
+        });
+
+        test('returns unwrapped data', () => {
+            expect(actualUnwrappedToken).toEqual(expectedUnwrappedToken);
+        });
+
+        test('uses basis theory token by id endpoint', () => {
+            expect(axios.get)
+                .toHaveBeenLastCalledWith(`https://api.basistheory.com/tokens/${givenTokenId}`, config);
+        });
     });
 
     afterEach(() => {
