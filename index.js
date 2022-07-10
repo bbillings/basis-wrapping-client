@@ -1,24 +1,21 @@
 const axios = require('axios');
 
+const headerConfig = {
+    headers: {
+        'Content-Type': 'application/json',
+        'BT-API-KEY': process.env.BT_WRAP_KEY
+    }
+};
+
 const wrap = async (dataToWrap) => {
-    if(!process.env.BT_WRAP_KEY) {
+    if (!process.env.BT_WRAP_KEY) {
         throw new Error('You must set \'BT_WRAP_KEY\' before data can be wrapped');
     }
 
-    return await axios.post('https://api.basistheory.com/tokens',
-        {
-            type: 'token',
-            data: dataToWrap
-        },
-        {
-            headers: {
-                'Content-Type': 'application/json',
-                'BT-API-KEY': process.env.BT_WRAP_KEY
-            }
-        })
-        .then(response => {
-            return response.data.id;
-        });
+    const data = {type: 'token', data: dataToWrap};
+
+    return await axios.post('https://api.basistheory.com/tokens', data, headerConfig)
+        .then(response => response.data.id);
 }
 
 const wrapAndLog = async (dataToWrap) => {
@@ -27,43 +24,17 @@ const wrapAndLog = async (dataToWrap) => {
 }
 
 const unwrap = async (tokenId) => {
+    if (!process.env.BT_WRAP_KEY) {
+        throw new Error('You must set \'BT_WRAP_KEY\' before data can be unwrapped');
+    }
 
-    return axios.get(`https://api.basistheory.com/tokens/${tokenId}`, {
-        headers: {
-
-        }
-    });
+    return await axios.get(`https://api.basistheory.com/tokens/${tokenId}`, headerConfig)
+        .then(response => response.data.data);
 }
 
-async function makeMyFirstToken() {
-
-    //Create first Token
-    const token = await axios.post('https://api.basistheory.com/tokens',
-        {
-            type: 'token',
-            data: 'foo',
-        },
-        {
-            headers: {
-                'Content-Type': 'application/json',
-                'BT-API-KEY': 'key_HsdCyJUUMBvLEmFaWtPfSz'
-            }
-        })
-
-    //Print Token response
-    console.log(token.data);
-
-    const readToken = await axios.get(`https://api.basistheory.com/tokens/${token.data.id}`,
-        {
-            headers: {
-                'Content-Type': 'application/json',
-                'BT-API-KEY': '[key here]'
-            }
-        });
-
-    //Print token we read
-    console.log("Read your Token:", readToken.data);
-    console.log("Read your raw value from the Token:", readToken.data.data);
+const unwrapAndLog = async (tokenId) => {
+    const unwrappedData = await unwrap(tokenId);
+    console.log(`unwrapped data: ${unwrappedData}`);
 }
 
-module.exports = {wrap, wrapAndLog, unwrap}
+module.exports = {wrap, wrapAndLog, unwrap, unwrapAndLog}

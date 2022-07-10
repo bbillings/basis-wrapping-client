@@ -80,7 +80,7 @@ describe('index', () => {
             actualUnwrappedToken,
             config;
 
-        beforeEach(() => {
+        beforeEach(async () => {
             givenTokenId = chance.guid();
             expectedUnwrappedToken = chance.word();
 
@@ -98,7 +98,7 @@ describe('index', () => {
                     }
                 }));
 
-            actualUnwrappedToken = unwrap(givenTokenId);
+            actualUnwrappedToken = await unwrap(givenTokenId);
         });
 
         test('returns unwrapped data', () => {
@@ -108,6 +108,19 @@ describe('index', () => {
         test('uses basis theory token by id endpoint', () => {
             expect(axios.get)
                 .toHaveBeenLastCalledWith(`https://api.basistheory.com/tokens/${givenTokenId}`, config);
+        });
+
+        describe('\'BT_WRAP_KEY\' not set', () => {
+
+            test('wrap gives an error',async () => {
+                process.env.BT_WRAP_KEY = '';
+
+                try {
+                    await unwrap(givenTokenId);
+                } catch (error) {
+                    expect(error.message).toBe('You must set \'BT_WRAP_KEY\' before data can be unwrapped');
+                }
+            });
         });
     });
 

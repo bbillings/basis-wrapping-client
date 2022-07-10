@@ -1,8 +1,8 @@
 {
   "scripts": {
-    "meh": "echo \"$npm_config_blah is here\"",
     "test": "jest",
-    "wrap": "node -e 'require(\"./index\").wrapAndLog(\"'$npm_config_blah'\")'"
+    "unwrap": "node -e 'require(\"./index\").unwrapAndLog(\"'$npm_config_token_id'\")'",
+    "wrap": "node -e 'require(\"./index\").wrapAndLog(\"'$npm_config_data'\")'"
   },
   "dependencies": {
     "axios": "^0.27.2"
