@@ -1,4 +1,4 @@
-const {wrap, unwrap} = require('./index');
+const {wrap, unwrap, deleteTokens} = require('./index');
 const axios = require('axios');
 const {when} = require('jest-when');
 const Chance = require('chance');
@@ -8,23 +8,25 @@ jest.mock('axios');
 
 describe('index', () => {
     const oldEnv = process.env;
-    let mockedBTKey;
+    const mockedBTKey = chance.guid();
+    const axiosConfig = {
+        headers: {
+            'Content-Type': 'application/json',
+            'BT-API-KEY': mockedBTKey
+        }
+    };
 
     beforeEach(() => {
         jest.resetModules();
         process.env = {...oldEnv};
-        mockedBTKey = chance.guid();
         process.env.BT_WRAP_KEY = mockedBTKey;
     });
 
     describe('wrap', () => {
-        const env = process.env;
-
         let givenDataToWrap,
             mockTokenId,
             actualTokenId,
-            data,
-            config;
+            data;
 
         beforeEach(async () => {
             givenDataToWrap = chance.apple_token();
@@ -35,14 +37,7 @@ describe('index', () => {
                 data: givenDataToWrap
             };
 
-            config = {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'BT-API-KEY': mockedBTKey
-                }
-            }
-
-            when(axios.post).calledWith('https://api.basistheory.com/tokens', data, config)
+            when(axios.post).calledWith('https://api.basistheory.com/tokens', data, axiosConfig)
                 .mockImplementation(() => Promise.resolve({
                     data: {
                         id: mockTokenId
@@ -57,7 +52,7 @@ describe('index', () => {
         });
 
         test('uses basis theory token endpoint', () => {
-            expect(axios.post).toHaveBeenCalledWith('https://api.basistheory.com/tokens', data, config);
+            expect(axios.post).toHaveBeenCalledWith('https://api.basistheory.com/tokens', data, axiosConfig);
         });
 
         describe('\'BT_WRAP_KEY\' not set', () => {
@@ -77,21 +72,13 @@ describe('index', () => {
     describe('unwrap', () => {
         let givenTokenId,
             expectedUnwrappedToken,
-            actualUnwrappedToken,
-            config;
+            actualUnwrappedToken;
 
         beforeEach(async () => {
             givenTokenId = chance.guid();
             expectedUnwrappedToken = chance.word();
 
-            config = {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'BT-API-KEY': mockedBTKey
-                }
-            };
-
-            when(axios.get).calledWith(`https://api.basistheory.com/tokens/${givenTokenId}`, config)
+            when(axios.get).calledWith(`https://api.basistheory.com/tokens/${givenTokenId}`, axiosConfig)
                 .mockImplementation(() => Promise.resolve({
                     data: {
                         data: expectedUnwrappedToken
@@ -107,7 +94,7 @@ describe('index', () => {
 
         test('uses basis theory token by id endpoint', () => {
             expect(axios.get)
-                .toHaveBeenLastCalledWith(`https://api.basistheory.com/tokens/${givenTokenId}`, config);
+                .toHaveBeenLastCalledWith(`https://api.basistheory.com/tokens/${givenTokenId}`, axiosConfig);
         });
 
         describe('\'BT_WRAP_KEY\' not set', () => {
@@ -123,6 +110,55 @@ describe('index', () => {
             });
         });
     });
+
+    describe('delete tokens', () => {
+
+        describe('tokens to delete specified', () => {
+            let tokensToDelete;
+
+            beforeEach(async () => {
+                tokensToDelete = chance.n(() => chance.guid(), chance.integer({min: 1, max: 10}));
+
+                when(axios.delete).mockImplementation(() => Promise.resolve({headers: {'BT-TRACE-ID': chance.guid()}}));
+
+                await deleteTokens(tokensToDelete);
+            });
+
+            test('uses delete token endpoint for each token', () => {
+                expect(axios.delete).toBeCalledTimes(tokensToDelete.length);
+            });
+
+            test('uses delete token endpoint with correct parameters', () => {
+                tokensToDelete.map(token => {
+                    expect(axios.delete).toHaveBeenCalledWith(`https://api.basistheory.com/tokens/${token.id}`, axiosConfig);
+                });
+            });
+        });
+
+        describe('tokens to delete NOT specified', () => {
+            let existingTokens;
+
+            beforeEach(async () => {
+                existingTokens = chance.n(() => ({id: chance.guid()}), chance.integer({min: 1, max: 10}));
+
+                const tokenListBody = { data: existingTokens };
+
+                when(axios.get).mockImplementation(() => Promise.resolve({data: tokenListBody}));
+
+                await deleteTokens();
+            });
+
+            test('finds all existing tokens', () => {
+                expect(axios.get).toHaveBeenLastCalledWith(`https://api.basistheory.com/tokens`, axiosConfig);
+            });
+
+            test('uses delete token endpoint for each existing token', () => {
+                existingTokens.map(token => {
+                    expect(axios.delete).toHaveBeenCalledWith(`https://api.basistheory.com/tokens/${token.id}`, axiosConfig);
+                });
+            });
+        });
+    })
 
     afterEach(() => {
         process.env = oldEnv;
